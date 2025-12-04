@@ -1,9 +1,9 @@
 const express = require('express')
-const cors = require('cors')
+const cors = require('')
 const app = express()
 
-app.use(cors())
 app.use(express.json())
+app.use(express.static('dist'))
 
 
 const requestLogger = (request, response, next) => {
