@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 
@@ -5,6 +6,8 @@ const app = express()
 
 app.use(express.static('dist'))
 app.use(express.json())
+
+const Person = require('./models/person')
 
 morgan.token('body', (request, response) => JSON.stringify(request.body))
 app.use(morgan(function (tokens, req, res) {
@@ -18,97 +21,91 @@ app.use(morgan(function (tokens, req, res) {
   ].join(' ')
 }))
 
-
-let persons = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-
 const generateId = (range = 1000000) => {
     const id = Math.floor(Math.random() * range)
     return String(id)
 }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const {name, number} = request.body
-
-    const personExists = persons.find(person => person.name.toLowerCase() === name.toLowerCase())
-
-    if (personExists) {
-        return response.status(400).json({
-            error: `${personExists.name} already in phonebook`
-        })
-    }
-
-    if (!name || !number || !name && !number) {
-        return response.status(400).json({
-            error: 'one or more missing properties'
-        })
-    }
     
-    const person = {
-        id: generateId(),
-        name,
-        number
-    }
-
-    persons = persons.concat(person)
-    response.json(person)
+    Person.findOne({name})
+        .then(person => {
+            if (person) {
+                return response.status(400).json({
+                    error: `${person.name} already in phonebook`
+                })
+            } else {
+                const person = new Person({name, number})
+                return person.save().then(savedPerson => {
+                    response.json(savedPerson)
+                })
+            }
+        }).catch(error => next(error))
 })
 
-app.get('/api/persons', (request, response) => {
-    response.json(persons)
-})
-
-app.get('/api/persons/:id', (request, response) => {
+app.put('/api/persons/:id', (request, response, next) => {
+    const { number } = request.body
     const id = request.params.id
-    const person = persons.find(person => person.id === id)
 
-    if (!person) {
-        return response.status(404).json({
-            error: "Person not found"
+    Person.findById(id)
+        .then(person => {
+            person.number = number
+            return person.save().then(savedPerson => {
+                response.json(savedPerson)
+            })
         })
-    }
-
-    response.json(person)
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
+    Person.find({}).then(persons => {
+        response.json(persons)
+    }).catch(error => next(error))
+})
+
+app.get('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
-    const person = persons.find(person => person.id === id)
-
-    if (!person) {
-        return response.status(404).json({
-            error: "Person not found"
+    Person.findById(id)
+        .then(person => {
+            response.json(person)
         })
-    }
+        .catch(error => next(error))
+})
 
-    persons = persons.filter(p => p.id !== person.id)
-
-    response.status(204).end()
+app.delete('/api/persons/:id', (request, response, next) => {
+    const id = request.params.id
+    Person.findByIdAndDelete(id)
+        .then(person => {
+            response.status(204).end()
+        })
+        .catch(error => {
+            next(error)
+        })
 })
 
 app.get('/info', (request, response) => {
-    response.send(`</p>Phonebook has info for ${persons.length} people.</p> <p>${new Date()}</p>`)
+    Person.find({}).then(persons => {
+        response.send(`</p>Phonebook has info for ${persons.length} people.</p> <p>${new Date()}</p>`)
+    })
 })
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
+
+app.use(errorHandler)
 
 
 const PORT = 3001

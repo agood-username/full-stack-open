@@ -8,8 +8,6 @@ import Persons from './components/Persons'
 import Notification from './components/Notification'
 
 const App = () => {
-  console.log('re-rendering')
-
   const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
@@ -65,7 +63,7 @@ const App = () => {
   const addPerson = (event) => {
     event.preventDefault()
 
-    const personExists = persons.find(person => person.name.toLowerCase().includes(newName.toLowerCase()))
+    const personExists = persons.find(person => person.name.toLowerCase() === newName.toLowerCase())
 
     if (!personExists) {
       createPerson(newName, newNumber)
@@ -102,8 +100,9 @@ const App = () => {
       personService
         .remove(selectedPerson)
         .then(returnedPerson => {
+          console.log(returnedPerson)
           setPersons(persons.filter((person) => person.id !== id))
-          notify(`Information about ${returnedPerson.name} successfully deleted.`, 3000)
+          notify(`Information about ${selectedPerson.name} successfully deleted.`, 3000)
           
         })
         .catch(error => {
