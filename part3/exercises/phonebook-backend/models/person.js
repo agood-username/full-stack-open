@@ -4,8 +4,8 @@ mongoose.set('strictQuery', false)
 
 const url = process.env.MONGODB_URI
 
-mongoose.connect(url, {family: 4})
-    .then(result => {
+mongoose.connect(url, { family: 4 })
+    .then(() => {
         console.log('connected to mongodb')
     })
     .catch(error => {
@@ -13,8 +13,20 @@ mongoose.connect(url, {family: 4})
     })
 
 const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
+    name: {
+        type: String,
+        minLength: [3, 'Must be at least 3 characters long, got {VALUE}']
+    },
+    number: {
+        type: String,
+        minLength: 3,
+        validate: {
+            validator: function (v) {
+                return /^(?=.{8,}$)\d{2,3}-\d+$/.test(v)
+            },
+            message: props => `${props.value} is not a valid phone number`
+        }
+    }
 })
 
 personSchema.set('toJSON', {

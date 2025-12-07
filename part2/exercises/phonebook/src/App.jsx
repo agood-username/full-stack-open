@@ -46,6 +46,9 @@ const App = () => {
           setPersons(persons.concat(returnedPerson))
           notify(`Information about ${newEntry.name} successfully added to phonebook.`, 3000)
         })
+      .catch(error => {
+        notify(error.response.data.error, 5000)
+      })
     }
 
   const updatePersonNumber = (person, number) => {
@@ -58,6 +61,9 @@ const App = () => {
             setPersons(persons.map(person => person.id !== returnedPerson.id ? person : returnedPerson))
             notify(`${person.name} number successfully updated.`, 3000)
           })
+        .catch(error => {
+          notify(error.response.data.error, 5000)
+        })
   }
 
   const addPerson = (event) => {
@@ -105,7 +111,7 @@ const App = () => {
           notify(`Information about ${selectedPerson.name} successfully deleted.`, 3000)
           
         })
-        .catch(error => {
+        .catch(() => {
           notify(`Information about ${selectedPerson.name} is already removed from server`, 5000)
           setPersons(prev => prev.filter((person) => person.id !== id))
         })

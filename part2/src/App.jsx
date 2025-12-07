@@ -56,7 +56,7 @@ const App = () => {
       .then(returnedNote => {
           setNotes(notes.concat(returnedNote))
           setNewNote('')
-        })
+      })
   }
 
   const handleNoteChange = (event) => {
